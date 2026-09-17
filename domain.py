@@ -3,6 +3,14 @@ from typing import Literal, Protocol
 
 from pydantic import BaseModel, Field, field_validator
 
+# The clouds this reviewer knows how to talk about. The key is what goes in the
+# CLOUD environment variable; the value is how the model is told to describe itself.
+CLOUDS = {
+    "oci": "Oracle Cloud Infrastructure (OCI)",
+    "aws": "Amazon Web Services (AWS)",
+}
+DEFAULT_CLOUD = "oci"
+
 
 class Standard(BaseModel):
     id: str  # e.g. "SEC-02", taken from the file name
@@ -25,10 +33,11 @@ class Finding(BaseModel):
 
 class Review(BaseModel):
     summary: str
-    oci_services: list[str]
+    cloud_services: list[str]
     findings: list[Finding]
     mermaid: str
     standards_considered: list[str] = Field(default_factory=list)  # set by our code
+    cloud: str = DEFAULT_CLOUD  # set by our code: which cloud this review targets
 
 
 class LLMClient(Protocol):

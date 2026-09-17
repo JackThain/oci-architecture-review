@@ -1,4 +1,5 @@
 oci
+boto3
 fastapi
 uvicorn
 pydantic>=2

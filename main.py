@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO, format="%(message)s")
 audit_log = logging.getLogger("audit")
 error_log = logging.getLogger("app")
 
-app = FastAPI(title="OCI Architecture Review Assistant")
+app = FastAPI(title="Cloud Architecture Review Assistant")
 reviewer = build_reviewer()
 
 
@@ -29,6 +29,7 @@ def audit(request_id: str, outcome: str, started: float, **details) -> None:
         "event": "architecture_review",
         "request_id": request_id,
         "outcome": outcome,
+        "cloud": reviewer.cloud,
         "model": reviewer.llm.model_name,
         "latency_ms": round((time.perf_counter() - started) * 1000),
         **details,
@@ -37,7 +38,7 @@ def audit(request_id: str, outcome: str, started: float, **details) -> None:
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok", "model": reviewer.llm.model_name}
+    return {"status": "ok", "cloud": reviewer.cloud, "model": reviewer.llm.model_name}
 
 
 @app.post("/review", response_model=Review)
@@ -52,7 +53,7 @@ def review(req: ReviewRequest) -> Review:
     except ValueError as err:  # includes Pydantic validation errors
         audit(request_id, "invalid_model_output", started)
         raise HTTPException(status_code=502, detail=f"Model gave an unusable answer: {err}")
-    except Exception:  # e.g. OCI throttling or auth errors
+    except Exception:  # e.g. throttling or auth errors from either cloud
         error_log.exception("Model call failed")
         audit(request_id, "model_call_failed", started)
         raise HTTPException(status_code=503, detail="Model service unavailable. Try again shortly.")

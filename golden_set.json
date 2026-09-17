@@ -2,16 +2,24 @@
   {
     "name": "public-db-single-region",
     "description": "Client portfolio reporting app for UK wealth management clients. Python API on a single VM in London, PostgreSQL database with a public IP so the analytics team can connect directly. Nightly backups to Object Storage in the same region. This is a tier-1 system.",
-    "expected_standards": ["SEC-02", "REL-01"]
+    "expected_standards": [
+      "SEC-02",
+      "REL-01"
+    ]
   },
   {
     "name": "offshore-analytics-copy",
-    "description": "Document store for client statements in an Object Storage bucket encrypted with Oracle-managed keys. A copy is replicated to a US region each night for the analytics team.",
-    "expected_standards": ["SEC-01", "DATA-01"]
+    "description": "Document store for client statements in an Object Storage bucket encrypted with the provider's default managed keys. A copy is replicated to a US region each night for the analytics team.",
+    "expected_standards": [
+      "SEC-01",
+      "DATA-01"
+    ]
   },
   {
     "name": "idle-gpu-batch",
     "description": "Nightly risk calculation batch job running on a large GPU shape that stays on 24/7, although the job only takes about an hour.",
-    "expected_standards": ["COST-01"]
+    "expected_standards": [
+      "COST-01"
+    ]
   }
 ]
