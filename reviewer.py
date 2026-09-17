@@ -19,7 +19,10 @@ Rules:
   "summary": one short paragraph describing your recommended {cloud} design,
   "cloud_services": a list of strings, each "service name - why it is used",
   "findings": a list of objects, each with the keys
-      "pillar" (one of: security, reliability, performance, cost, operations),
+      "pillar" - exactly one of these five words and nothing else:
+          security, reliability, performance, cost, operations.
+        Data residency, privacy and other compliance findings belong under
+        "security". Never invent a pillar name such as "data" or "compliance",
       "severity" (one of: high, medium, low),
       "issue", "recommendation" and "standard_id",
   "mermaid": a Mermaid diagram of your recommended design, starting with "flowchart LR"

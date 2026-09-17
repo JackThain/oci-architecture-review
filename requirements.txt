@@ -1,5 +1,7 @@
 oci
 boto3
+# botocore[crt] is needed when AWS credentials come from SSO / aws login
+botocore[crt]
 fastapi
 uvicorn
 pydantic>=2

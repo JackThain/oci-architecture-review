@@ -11,6 +11,34 @@ CLOUDS = {
 }
 DEFAULT_CLOUD = "oci"
 
+# Smaller models reach for pillar names outside the framework - "data" for a
+# residency finding, "availability" for reliability. Prompting reduces this but
+# does not stop it, so map the values we have actually observed onto the real
+# pillar. Mapping keeps the finding; rejecting it would throw away a real issue.
+PILLAR_ALIASES = {
+    "data": "security",
+    "compliance": "security",
+    "privacy": "security",
+    "availability": "reliability",
+    "resilience": "reliability",
+    "resiliency": "reliability",
+    "governance": "operations",
+    "operational": "operations",
+    "operational excellence": "operations",
+    "cost optimization": "cost",
+    "cost optimisation": "cost",
+    "performance efficiency": "performance",
+}
+SEVERITY_ALIASES = {
+    "critical": "high",
+    "severe": "high",
+    "moderate": "medium",
+    "med": "medium",
+    "minor": "low",
+    "informational": "low",
+    "info": "low",
+}
+
 
 class Standard(BaseModel):
     id: str  # e.g. "SEC-02", taken from the file name
@@ -24,11 +52,22 @@ class Finding(BaseModel):
     recommendation: str
     standard_id: str | None = None  # which organisation standard this relates to
 
-    @field_validator("pillar", "severity", mode="before")
+    @field_validator("pillar", mode="before")
     @classmethod
-    def _lowercase(cls, value):
-        # Models sometimes answer "High" or "Security"; normalise before validating.
-        return value.strip().lower() if isinstance(value, str) else value
+    def _normalise_pillar(cls, value):
+        # Models answer "Security", or reach outside the framework entirely.
+        if not isinstance(value, str):
+            return value
+        value = value.strip().lower()
+        return PILLAR_ALIASES.get(value, value)
+
+    @field_validator("severity", mode="before")
+    @classmethod
+    def _normalise_severity(cls, value):
+        if not isinstance(value, str):
+            return value
+        value = value.strip().lower()
+        return SEVERITY_ALIASES.get(value, value)
 
 
 class Review(BaseModel):
