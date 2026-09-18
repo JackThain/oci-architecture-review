@@ -5,9 +5,10 @@ import time
 import uuid
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from bootstrap import build_reviewer
+from bootstrap import PROJECT_DIR, build_reviewer
 from domain import Review
 from reviewer import GuardrailError
 
@@ -34,6 +35,12 @@ def audit(request_id: str, outcome: str, started: float, **details) -> None:
         "latency_ms": round((time.perf_counter() - started) * 1000),
         **details,
     }))
+
+
+@app.get("/", include_in_schema=False)
+def ui() -> FileResponse:
+    """Single-page front end. It calls /review like any other client."""
+    return FileResponse(PROJECT_DIR / "static" / "index.html")
 
 
 @app.get("/health")

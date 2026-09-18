@@ -25,7 +25,9 @@ Rules:
         "security". Never invent a pillar name such as "data" or "compliance",
       "severity" (one of: high, medium, low),
       "issue", "recommendation" and "standard_id",
-  "mermaid": a Mermaid diagram of your recommended design, starting with "flowchart LR"
+  "mermaid": a Mermaid diagram of your recommended design, starting with "flowchart LR".
+    Node labels must contain letters, numbers and spaces only - never brackets or
+    parentheses, so write A[RDS PostgreSQL] and not A[RDS (PostgreSQL)].
 """
 
 

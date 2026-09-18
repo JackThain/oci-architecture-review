@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Architecture Review Assistant</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --ink: #14171a; --muted: #5c6670;
+    --line: #dfe3e8; --accent: #1f6feb;
+    --high: #c0392b; --high-bg: #fdecea;
+    --medium: #b06000; --medium-bg: #fdf3e3;
+    --low: #1f6feb; --low-bg: #eaf1fd;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1216; --panel: #171b21; --ink: #e6e9ed; --muted: #9aa4af;
+      --line: #2a313a; --accent: #589bff;
+      --high: #ff8579; --high-bg: #35201e;
+      --medium: #e8b167; --medium-bg: #332818;
+      --low: #589bff; --low-bg: #1a2437;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 28px 16px 80px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+  h1 { font-size: 21px; margin: 0; letter-spacing: -0.01em; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin: 0 0 10px; }
+  #env { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  #env b { color: var(--ink); font-weight: 600; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; margin-bottom: 18px; }
+  textarea {
+    width: 100%; min-height: 128px; resize: vertical; padding: 12px;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--bg);
+    color: var(--ink); font: inherit; line-height: 1.5;
+  }
+  textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+  .row { display: flex; align-items: center; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+  button {
+    background: var(--accent); color: #fff; border: 0; border-radius: 8px;
+    padding: 9px 18px; font: inherit; font-weight: 600; cursor: pointer;
+  }
+  button:disabled { opacity: 0.55; cursor: default; }
+  .hint { font-size: 12.5px; color: var(--muted); }
+  #error { display: none; border-left: 3px solid var(--high); background: var(--high-bg); color: var(--high); padding: 12px 14px; border-radius: 6px; margin-bottom: 18px; }
+  #error b { display: block; margin-bottom: 3px; }
+  #results { display: none; }
+  .finding { border: 1px solid var(--line); border-left-width: 3px; border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; }
+  .finding.high { border-left-color: var(--high); }
+  .finding.medium { border-left-color: var(--medium); }
+  .finding.low { border-left-color: var(--low); }
+  .tags { display: flex; gap: 6px; align-items: center; margin-bottom: 7px; flex-wrap: wrap; }
+  .tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 2.5px 8px; border-radius: 20px; }
+  .tag.high { background: var(--high-bg); color: var(--high); }
+  .tag.medium { background: var(--medium-bg); color: var(--medium); }
+  .tag.low { background: var(--low-bg); color: var(--low); }
+  .tag.pillar { background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
+  .tag.std { background: var(--low-bg); color: var(--low); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .tag.nostd { background: var(--bg); color: var(--muted); border: 1px dashed var(--line); font-weight: 500; text-transform: none; letter-spacing: 0; }
+  .issue { font-weight: 600; margin-bottom: 3px; }
+  .rec { color: var(--muted); font-size: 14px; }
+  ul.services { margin: 0; padding-left: 19px; }
+  ul.services li { margin-bottom: 5px; }
+  #diagram { overflow-x: auto; text-align: center; }
+  #diagram svg { max-width: 100%; height: auto; }
+  pre.raw { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px; overflow-x: auto; font-size: 12.5px; margin: 0; }
+  .considered { font-size: 12.5px; color: var(--muted); margin-top: 12px; }
+  .considered code { background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; margin-right: 4px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Architecture Review Assistant</h1>
+    <div id="env">checking&hellip;</div>
+  </header>
+
+  <div class="panel">
+    <h2>System to review</h2>
+    <textarea id="description" spellcheck="false">Tier-1 client reporting app for UK wealth management clients. Python API on a single VM in London, PostgreSQL database with a public IP so the analytics team can connect directly. Nightly backups to object storage in the same region.</textarea>
+    <div class="row">
+      <button id="go">Review design</button>
+      <span class="hint">Designs must not contain client data &mdash; the guardrail rejects anything that looks like it.</span>
+    </div>
+  </div>
+
+  <div id="error"></div>
+
+  <div id="results">
+    <div class="panel">
+      <h2>Summary</h2>
+      <div id="summary"></div>
+      <div class="considered" id="considered"></div>
+    </div>
+    <div class="panel">
+      <h2>Recommended design</h2>
+      <div id="diagram"></div>
+    </div>
+    <div class="panel">
+      <h2>Services</h2>
+      <ul class="services" id="services"></ul>
+    </div>
+    <div class="panel">
+      <h2>Findings <span id="count" class="hint"></span></h2>
+      <div id="findings"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+mermaid.initialize({ startOnLoad: false, securityLevel: "strict" });
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, c => (
+  { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+fetch("/health").then(r => r.json()).then(h => {
+  $("env").innerHTML = `cloud <b>${esc(h.cloud)}</b> &middot; model <b>${esc(h.model)}</b>`;
+}).catch(() => { $("env").textContent = "server unreachable"; });
+
+const RANK = { high: 0, medium: 1, low: 2 };
+
+// Models often write A[RDS (PostgreSQL)], which Mermaid cannot parse: a label
+// containing parentheses has to be quoted. Quote those labels, while leaving
+// the [( )] cylinder shape and already-quoted labels alone.
+function repairMermaid(src) {
+  return src.replace(/\[(?!\()(?!")([^\]]*\([^\]]*\)[^\]]*)\]/g, '["$1"]');
+}
+
+async function drawDiagram(src) {
+  const box = $("diagram");
+  try {
+    const { svg } = await mermaid.render("d" + Date.now(), repairMermaid(src));
+    box.innerHTML = svg;
+  } catch (e) {
+    // A smaller model can emit Mermaid that will not parse. Show the source
+    // rather than leaving an empty box with no explanation.
+    box.innerHTML = `<p class="hint" style="text-align:left">Diagram could not be rendered; raw output below.</p>
+                     <pre class="raw" style="text-align:left">${esc(src)}</pre>`;
+  }
+}
+
+async function review() {
+  const btn = $("go"), desc = $("description").value.trim();
+  $("error").style.display = "none";
+  $("results").style.display = "none";
+  if (!desc) return;
+  btn.disabled = true; btn.textContent = "Reviewing…";
+  try {
+    const res = await fetch("/review", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description: desc })
+    });
+    const body = await res.json();
+    if (!res.ok) {
+      const d = body.detail;
+      const msg = Array.isArray(d) ? d.map(x => x.msg).join("; ") : (d || "Request failed");
+      $("error").innerHTML = `<b>HTTP ${res.status}</b>${esc(msg)}`;
+      $("error").style.display = "block";
+      return;
+    }
+    render(body);
+  } catch (e) {
+    $("error").innerHTML = `<b>Could not reach the API</b>${esc(e.message)}`;
+    $("error").style.display = "block";
+  } finally {
+    btn.disabled = false; btn.textContent = "Review design";
+  }
+}
+
+function render(r) {
+  $("summary").textContent = r.summary;
+  $("considered").innerHTML = r.standards_considered.length
+    ? "Standards retrieved: " + r.standards_considered.map(s => `<code>${esc(s)}</code>`).join("")
+    : "No organisation standards matched this description.";
+
+  $("services").innerHTML = r.cloud_services
+    .map(s => `<li>${esc(s)}</li>`).join("");
+
+  const findings = [...r.findings].sort((a, b) => RANK[a.severity] - RANK[b.severity]);
+  const highs = findings.filter(f => f.severity === "high").length;
+  $("count").textContent = `— ${findings.length} total, ${highs} high severity`;
+  $("findings").innerHTML = findings.map(f => `
+    <div class="finding ${esc(f.severity)}">
+      <div class="tags">
+        <span class="tag ${esc(f.severity)}">${esc(f.severity)}</span>
+        <span class="tag pillar">${esc(f.pillar)}</span>
+        ${f.standard_id
+          ? `<span class="tag std">${esc(f.standard_id)}</span>`
+          : `<span class="tag nostd">general best practice</span>`}
+      </div>
+      <div class="issue">${esc(f.issue)}</div>
+      <div class="rec">${esc(f.recommendation)}</div>
+    </div>`).join("");
+
+  $("results").style.display = "block";
+  drawDiagram(r.mermaid);
+}
+
+$("go").addEventListener("click", review);
+$("description").addEventListener("keydown", e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") review();
+});
+</script>
+</body>
+</html>
